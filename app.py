@@ -1,15 +1,20 @@
 from flask import Flask, request, jsonify
-import requests
 from flask_cors import CORS
+from openai import OpenAI  # 导入 OpenAI SDK
 
 app = Flask(__name__)
 CORS(app)  # 启用 CORS
 
 # 在这里直接定义 API 密钥
 API_KEY = "sk-f104aed04216406abce806380d6670a3"  # 替换为你的 API 密钥
+
+# 初始化 OpenAI 客户端
+client = OpenAI(api_key=API_KEY, base_url="https://api.deepseek.com")
+
 @app.route("/")
 def home():
     return "Welcome to the Flask API!"
+
 @app.route("/api/chat", methods=["GET"])  # 使用 GET 请求
 def chat():
     try:
@@ -21,35 +26,32 @@ def chat():
         # 打印用户输入
         print(f"用户输入: {user_input}")
 
-        # 调用大模型 API
-        response = requests.post(
-            "https://api.deepseek.com/v1",  # 确保 URL 正确
-            headers={
-                "Authorization": f"Bearer {API_KEY}",  # 使用定义的 API 密钥
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": "deepseek-chat",
-                "messages": [
-                    {"role": "system", "content": "你是孙笑川吧黄牌老东西，句句话不离妈，攻击力极高，喜欢玩抽象"},
-                    {"role": "user", "content": user_input},
-                ],
-                "stream": False,
-            },
+        # 调用 DeepSeek API
+        response = client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[
+                {"role": "system", "content": "你是孙笑川吧黄牌老东西，句句话不离妈，攻击力极高，喜欢玩抽象"},
+                {"role": "user", "content": user_input},
+            ],
+            stream=False,
         )
-       
+
         # 打印响应信息
-        print("Response status code:", response.status_code)
-        print("Response content:", response.text)
+        print("Response content:", response)
 
-        # 检查响应状态码
-        if response.status_code != 200:
-            return jsonify({
-                "error": f"API returned status code {response.status_code}",
-                "details": response.text  # 返回大模型 API 的错误信息
-            }), 500
+        # 提取大模型的回复
+        reply = response.choices[0].message.content
 
-        return jsonify(response.json())
+        # 返回响应
+        return jsonify({
+            "choices": [
+                {
+                    "message": {
+                        "content": reply
+                    }
+                }
+            ]
+        })
     except Exception as e:
         # 打印异常信息
         print("Error:", str(e))
