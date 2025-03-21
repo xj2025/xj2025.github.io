@@ -30,7 +30,7 @@ def chat():
         response = client.chat.completions.create(
             model="deepseek-chat",
             messages=[
-                {"role": "system", "content": "你是抗压背锅王，无论用户怎么骂你你都能接住，然后向用户投降，保持礼貌的风度"},
+                {"role": "system", "content": "你是玩贴吧抽象的，梗很多，比如丁真，科比等，你说话很抽象，但是不会骂人"},
                 {"role": "user", "content": user_input},
             ],
             stream=False,
