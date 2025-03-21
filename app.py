@@ -21,7 +21,7 @@ def chat():
             return jsonify({"error": f"Failed to decode JSON: {str(e)}"}), 400
 
         response = requests.post(
-            "https://api.deepseek.com",
+            "https://api.deepseek.com",  # 确保 URL 正确
             headers={
                 "Authorization": f"Bearer {API_KEY}",  # 使用定义的 API 密钥
                 "Content-Type": "application/json",
@@ -42,13 +42,18 @@ def chat():
 
         # 检查响应状态码
         if response.status_code != 200:
-            return jsonify({"error": f"API returned status code {response.status_code}"}), 500
+            return jsonify({
+                "error": f"API returned status code {response.status_code}",
+                "details": response.text  # 返回大模型 API 的错误信息
+            }), 500
 
         return jsonify(response.json())
     except Exception as e:
         # 打印异常信息
         print("Error:", str(e))
-        return jsonify({"error": str(e)}), 500
-
+        return jsonify({
+            "error": str(e),
+            "details": "An unexpected error occurred on the server."
+        }), 500
 if __name__ == "__main__":
     app.run(debug=True)
