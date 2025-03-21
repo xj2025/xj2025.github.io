@@ -86,28 +86,32 @@
         const sendButton = document.getElementById("send-button");
 
         async function sendRequest(userInput) {
-            try {
-                const response = await fetch(API_URL, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        userInput: userInput,  // 将用户输入发送到后端
-                    }),
-                });
+    try {
+        const response = await fetch(API_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                userInput: userInput,  // 将用户输入发送到后端
+            }),
+        });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
-                return data.choices[0].message.content;  // 返回大模型的回复
-            } catch (error) {
-                console.error("Error:", error);
-                return "调用API时出错，请检查控制台。";
-            }
+        if (!response.ok) {
+            // 如果响应状态码不是 200，解析错误信息
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Unknown error occurred");
         }
+
+        const data = await response.json();
+        return data.choices[0].message.content;  // 返回大模型的回复
+    } catch (error) {
+        // 捕获错误并显示在页面上
+        document.getElementById("output").innerHTML += `<div><strong>错误：</strong>${error.message}</div>`;
+        console.error("Error:", error);
+        return null;
+    }
+}
 
         // 处理用户输入
         sendButton.addEventListener("click", async () => {
