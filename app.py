@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 import requests
 from flask_cors import CORS
+import json
 
 app = Flask(__name__)
 CORS(app)  # 启用 CORS
@@ -10,8 +11,15 @@ API_KEY = "sk-f104aed04216406abce806380d6670a3"  # 替换为你的 API 密钥
 
 @app.route("/api/chat", methods=["POST"])
 def chat():
-    user_input = request.json.get("userInput")
     try:
+        # 手动解析 JSON 数据
+        request_data = request.get_data(as_text=True)
+        try:
+            data = json.loads(request_data)
+            user_input = data.get("userInput")
+        except json.JSONDecodeError as e:
+            return jsonify({"error": f"Failed to decode JSON: {str(e)}"}), 400
+
         response = requests.post(
             "https://api.deepseek.com",
             headers={
@@ -41,5 +49,6 @@ def chat():
         # 打印异常信息
         print("Error:", str(e))
         return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     app.run(debug=True)
