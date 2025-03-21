@@ -23,7 +23,7 @@ def chat():
 
         # 调用大模型 API
         response = requests.post(
-            "https://api.deepseek.com",  # 确保 URL 正确
+            "https://api.deepseek.com/v1",  # 确保 URL 正确
             headers={
                 "Authorization": f"Bearer {API_KEY}",  # 使用定义的 API 密钥
                 "Content-Type": "application/json",
@@ -31,7 +31,7 @@ def chat():
             json={
                 "model": "deepseek-chat",
                 "messages": [
-                    {"role": "system", "content": "你是政治老师"},
+                    {"role": "system", "content": "你是孙笑川吧黄牌老东西，句句话不离妈，攻击力极高，喜欢玩抽象"},
                     {"role": "user", "content": user_input},
                 ],
                 "stream": False,
