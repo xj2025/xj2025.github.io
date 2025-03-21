@@ -87,14 +87,8 @@
 
         async function sendRequest(userInput) {
     try {
-        const response = await fetch(API_URL, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                userInput: userInput,  // 将用户输入发送到后端
-            }),
+        const response = await fetch(`${API_URL}?userInput=${encodeURIComponent(userInput)}`, {
+            method: "GET",  // 使用 GET 请求
         });
 
         if (!response.ok) {
@@ -113,28 +107,26 @@
     }
 }
 
-        // 处理用户输入
-        sendButton.addEventListener("click", async () => {
-            const userInput = inputBox.value.trim();
-            if (!userInput) {
-                alert("请输入内容！");
-                return;
-            }
+// 示例：监听按钮点击事件
+document.getElementById("send-button").addEventListener("click", async () => {
+    const userInput = document.getElementById("input-box").value.trim();
+    if (!userInput) {
+        alert("请输入内容！");
+        return;
+    }
 
-            // 清空输入框
-            inputBox.value = "";
+    // 显示用户输入
+    document.getElementById("output").innerHTML += `<div><strong>你：</strong>${userInput}</div>`;
 
-            // 显示用户输入
-            outputDiv.innerHTML += `<div><strong>你：</strong>${userInput}</div>`;
+    // 调用后端 API 并显示结果
+    const responseText = await sendRequest(userInput);
+    if (responseText) {
+        document.getElementById("output").innerHTML += `<div><strong>大模型：</strong>${responseText}</div>`;
+    }
 
-            // 调用API并显示结果
-            const responseText = await sendRequest(userInput);
-            outputDiv.innerHTML += `<div><strong>d**k$eep：</strong>${responseText}</div>`;
-
-            // 滚动到底部
-            outputDiv.scrollTop = outputDiv.scrollHeight;
-        });
-
+    // 滚动到底部
+    document.getElementById("output").scrollTop = document.getElementById("output").scrollHeight;
+});
 
 
     </script>
