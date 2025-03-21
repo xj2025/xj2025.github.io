@@ -7,7 +7,9 @@ CORS(app)  # 启用 CORS
 
 # 在这里直接定义 API 密钥
 API_KEY = "sk-f104aed04216406abce806380d6670a3"  # 替换为你的 API 密钥
-
+@app.route("/")
+def home():
+    return "Welcome to the Flask API!"
 @app.route("/api/chat", methods=["GET"])  # 使用 GET 请求
 def chat():
     try:
