@@ -27,9 +27,19 @@ def chat():
                 "stream": False,
             },
         )
+       
+        # 打印响应信息
+        print("Response status code:", response.status_code)
+        print("Response content:", response.text)
+
+        # 检查响应状态码
+        if response.status_code != 200:
+            return jsonify({"error": f"API returned status code {response.status_code}"}), 500
+
         return jsonify(response.json())
     except Exception as e:
+        # 打印异常信息
+        print("Error:", str(e))
         return jsonify({"error": str(e)}), 500
-
 if __name__ == "__main__":
     app.run(debug=True)
