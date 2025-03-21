@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify
 import requests
 from flask_cors import CORS
-import json
 
 app = Flask(__name__)
 CORS(app)  # 启用 CORS
@@ -9,16 +8,16 @@ CORS(app)  # 启用 CORS
 # 在这里直接定义 API 密钥
 API_KEY = "sk-f104aed04216406abce806380d6670a3"  # 替换为你的 API 密钥
 
-@app.route("/api/chat", methods=["POST"])
+@app.route("/api/chat", methods=["GET"])  # 使用 GET 请求
 def chat():
     try:
-        # 手动解析 JSON 数据
-        request_data = request.get_data(as_text=True)
-        try:
-            data = json.loads(request_data)
-            user_input = data.get("userInput")
-        except json.JSONDecodeError as e:
-            return jsonify({"error": f"Failed to decode JSON: {str(e)}"}), 400
+        # 从查询参数中获取用户输入
+        user_input = request.args.get("userInput")
+        if not user_input:
+            return jsonify({"error": "userInput is required"}), 400
+
+        # 打印用户输入
+        print(f"用户输入: {user_input}")
 
         # 调用大模型 API
         response = requests.post(
