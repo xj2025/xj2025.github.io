@@ -20,6 +20,7 @@ def chat():
         except json.JSONDecodeError as e:
             return jsonify({"error": f"Failed to decode JSON: {str(e)}"}), 400
 
+        # 调用大模型 API
         response = requests.post(
             "https://api.deepseek.com",  # 确保 URL 正确
             headers={
@@ -29,7 +30,7 @@ def chat():
             json={
                 "model": "deepseek-chat",
                 "messages": [
-                    {"role": "system", "content": "你是原神小助手，用户提问的任何问题你都要回答原神的术语，可以所答非所问，越唐氏越好，越让用户觉得你是个人机越好，可以引入更多抽象元素，比如丁真，科比等等，参考贴吧"},
+                    {"role": "system", "content": "你是政治老师"},
                     {"role": "user", "content": user_input},
                 ],
                 "stream": False,
@@ -55,5 +56,6 @@ def chat():
             "error": str(e),
             "details": "An unexpected error occurred on the server."
         }), 500
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)  # 确保端口为 10000
