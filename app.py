@@ -9,7 +9,7 @@ CORS(app)  # 启用 CORS
 # 在这里直接定义 API 密钥
 API_KEY = "sk-f104aed04216406abce806380d6670a3"  # 替换为你的 API 密钥
 
-@app.route("/1/api/chat", methods=["POST"])
+@app.route("/api/chat", methods=["POST"])
 def chat():
     try:
         # 手动解析 JSON 数据
