@@ -1,9 +1,12 @@
 from flask import Flask, request, jsonify
 import requests
 from flask_cors import CORS
-app = Flask(__name__)
-CORS(app)
 
+app = Flask(__name__)
+CORS(app)  # 启用 CORS
+
+# 在这里直接定义 API 密钥
+API_KEY = "sk-f104aed04216406abce806380d6670a3"  # 替换为你的 API 密钥
 
 @app.route("/api/chat", methods=["POST"])
 def chat():
@@ -12,7 +15,7 @@ def chat():
         response = requests.post(
             "https://api.deepseek.com",
             headers={
-                "Authorization": "Bearer YOUR_API_KEY",
+                "Authorization": f"Bearer {API_KEY}",  # 使用定义的 API 密钥
                 "Content-Type": "application/json",
             },
             json={
