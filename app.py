@@ -32,7 +32,7 @@ embedding_model = SentenceTransformer(
 )
 
 # 加载知识库
-with open('knowledge.json', 'r', encoding='utf-8') as f:
+with open('1.json', 'r', encoding='utf-8') as f:
     knowledge_base = json.load(f)
 
 # 构建FAISS索引
