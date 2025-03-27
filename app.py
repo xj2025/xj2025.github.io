@@ -12,6 +12,11 @@ import sys
 import io
 #import locale
 #locale.setlocale(locale.LC_ALL, 'zh_CN.UTF-8')
+
+
+os.environ["TOKENIZERS_PARALLELISM"] = "false"  # 在文件最开头添加
+
+# 其他现有代码保持不变...
 # 强制设置系统默认编码为UTF-8
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
