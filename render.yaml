@@ -11,5 +11,5 @@ services:
       - key: OMP_NUM_THREADS
         value: "1"  # 强制单线程，节省内存
     resources:
-      cpu: 0.1  # 免费层配置
-      memory: 512MB
+      cpu: 1  # 免费层配置
+      memory: 2GB
