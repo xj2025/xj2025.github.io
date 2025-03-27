@@ -1,7 +1,7 @@
 const API_URL = "https://xj2025-github-io.onrender.com/api/chat";
-const messagesContainer = document.getElementById("messages");
-const userInput = document.getElementById("user-input");
-const sendButton = document.getElementById("send-btn");
+const outputDiv = document.getElementById("output");
+const inputBox = document.getElementById("input-box");
+const sendButton = document.getElementById("send-button");
 
 // 初始化对话上下文
 function initMessages() {
@@ -18,7 +18,7 @@ async function sendRequest(userInput) {
     try {
         const response = await fetch(API_URL, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json;charset=utf-8" },
             body: JSON.stringify({
                 userInput: userInput,
                 messages: messages
@@ -28,75 +28,51 @@ async function sendRequest(userInput) {
         if (!response.ok) throw new Error(await response.text());
         return await response.json();
     } catch (error) {
-        addMessage("AI", `错误：${error.message}`, true);
+        outputDiv.innerHTML += `<div class="error">错误：${error.message}</div>`;
         console.error("API Error:", error);
         return null;
     }
 }
 
-// 添加消息到聊天界面
-function addMessage(sender, content, isError = false) {
-    const messageDiv = document.createElement("div");
-    messageDiv.className = `message message-${sender.toLowerCase()}`;
-    
-    const avatarDiv = document.createElement("div");
-    avatarDiv.className = "avatar";
-    if (sender === "user") avatarDiv.classList.add("user-avatar");
-    avatarDiv.textContent = sender;
-    
-    const bubbleDiv = document.createElement("div");
-    bubbleDiv.className = sender === "user" ? "bubble user-bubble" : "bubble ai-bubble";
-    if (isError) bubbleDiv.style.color = "red";
-    bubbleDiv.textContent = content;
-    
-    messageDiv.appendChild(avatarDiv);
-    messageDiv.appendChild(bubbleDiv);
-    
-    messagesContainer.appendChild(messageDiv);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-}
-
 // 发送消息
 sendButton.addEventListener("click", async () => {
-    const inputText = userInput.value.trim();
-    if (!inputText) return;
+    const userInput = inputBox.value.trim();
+    if (!userInput) return;
 
     // 显示用户输入
-    addMessage("user", inputText);
-    userInput.value = "";
+    outputDiv.innerHTML += `<div><strong>你：</strong>${userInput}</div>`;
+    inputBox.value = "";
 
     // 调用API
-    const result = await sendRequest(inputText);
+    const result = await sendRequest(userInput);
     if (result) {
         // 显示AI回复
-        addMessage("AI", result.reply);
+        outputDiv.innerHTML += `<div><strong>AI：</strong>${result.reply}</div>`;
 
         // 调试信息：显示检索到的知识（可选）
         if (result.relatedKnowledge && result.relatedKnowledge.length > 0) {
-            const knowledgeText = "参考知识：\n" + result.relatedKnowledge.join("\n");
-            addMessage("AI", knowledgeText);
+            outputDiv.innerHTML += `<div class="knowledge"><small>参考知识：${result.relatedKnowledge.join("<br>")}</small></div>`;
         }
 
         // 更新上下文
         messages = result.updatedMessages;
         sessionStorage.setItem("chatMessages", JSON.stringify(messages));
     }
+
+    outputDiv.scrollTop = outputDiv.scrollHeight;
 });
 
 // 按Enter发送
-userInput.addEventListener("keypress", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        sendButton.click();
-    }
+inputBox.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") sendButton.click();
 });
 
 // 加载历史消息
 window.addEventListener("load", () => {
     if (messages.length > 1) {
         messages.slice(1).forEach(msg => {
-            const sender = msg.role === "user" ? "user" : "AI";
-            addMessage(sender, msg.content);
+            const sender = msg.role === "user" ? "你" : "AI";
+            outputDiv.innerHTML += `<div><strong>${sender}：</strong>${msg.content}</div>`;
         });
     }
 });
