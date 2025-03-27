@@ -8,8 +8,13 @@ import json
 import os
 
 app = Flask(__name__)
-CORS(app)
-
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["https://xj2025.github.io", "http://localhost:*"],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"]
+    }
+})
 # ========== 初始化配置 ==========
 class ChatConfig:
     def __init__(self):
