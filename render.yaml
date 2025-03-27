@@ -1,0 +1,15 @@
+# render.yaml
+services:
+  - type: web
+    name: xj2025-github-io  # 服务名称（自定义）
+    runtime: python
+    buildCommand: |
+      pip install -r requirements.txt --no-cache-dir  # 仅安装依赖
+    startCommand: |
+      python app.py  # 启动命令
+    envVars:
+      - key: OMP_NUM_THREADS
+        value: "1"  # 强制单线程，节省内存
+    resources:
+      cpu: 0.1  # 免费层配置
+      memory: 512MB
