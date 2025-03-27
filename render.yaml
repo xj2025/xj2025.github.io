@@ -5,11 +5,20 @@ services:
     runtime: python
     buildCommand: |
       pip install -r requirements.txt --no-cache-dir  # 仅安装依赖
+    preStartCommand: |
+      flask warmup || echo "预热失败但继续启动"
     startCommand: |
-      python app.py  # 启动命令
+      gunicorn app:app \
+        --workers ${WORKERS:-1} \
+        --timeout ${TIMEOUT:-120} \
+        --bind 0.0.0.0:10000
     envVars:
       - key: OMP_NUM_THREADS
         value: "1"  # 强制单线程，节省内存
+      - key: WORKERS
+        value: 1
+      - key: TIMEOUT
+        value: 120
     resources:
       cpu: 1  # 免费层配置
       memory: 2GB
