@@ -21,7 +21,14 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"  # 在文件最开头添加
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 app = Flask(__name__)
-CORS(app)
+# 精确配置CORS（必须放在所有路由定义前）
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["https://xj2025.github.io"],
+        "methods": ["POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"]
+    }
+})
 app.config['JSON_AS_ASCII'] = False  # 允许非ASCII字符
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 # ========== 初始化日志配置 ==========
