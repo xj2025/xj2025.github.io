@@ -1,7 +1,8 @@
 const API_URL = "https://xj2025-github-io.onrender.com/api/chat";
 const outputDiv = document.getElementById("output");
-const inputBox = document.getElementById("input-box");
-const sendButton = document.getElementById("send-button");
+// 修改这两行
+const inputBox = document.getElementById("user-input");  // 原先是input-box
+const sendButton = document.getElementById("send-btn");  // 原先是send-button
 
 // 初始化对话上下文
 function initMessages() {
