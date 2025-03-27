@@ -33,19 +33,25 @@ function addMessage(sender, content, isError = false) {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
+
+
+
 async function sendRequest(userInput) {
     try {
         const response = await fetch(API_URL, {
             method: "POST",
-            headers: { "Content-Type": "application/json;charset=utf-8" },
+            mode: "cors",  // 显式声明CORS模式
+            headers: { "Content-Type": "application/json;charset=utf-8"},
             body: JSON.stringify({ userInput, messages })
         });
-
-        if (!response.ok) throw new Error(await response.text());
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || "请求失败");
+        }
         return await response.json();
     } catch (error) {
-        addMessage("AI", `错误：${error.message}`, true);
-        console.error("API Error:", error);
+        showError(`请求失败: ${error.message}`);
         return null;
     }
 }
