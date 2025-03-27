@@ -90,34 +90,11 @@ except Exception as e:
     # 设置为None以便后续检查
     client = embedding_model = knowledge_base = faiss_index = None
 # ========== 模型预热 ==========
-@app.before_first_request
-def warmup_models():
-    """在第一个请求到达前预热模型"""
-    try:
-        logger.info("开始模型预热...")
-        
-        # 1. 预热嵌入模型
-        test_text = "预热文本"
-        embedding = embedding_model.encode(test_text)
-        logger.info(f"嵌入模型预热成功，向量维度: {embedding.shape}")
-        
-        # 2. 预热FAISS索引
-        _, _ = faiss_index.search(np.array([embedding]), 1)
-        logger.info("FAISS索引预热成功")
-        
-        # 3. 测试OpenAI连接（可选）
-        if client:
-            resp = client.chat.completions.create(
-                model="deepseek-chat",
-                messages=[{"role": "user", "content": "ping"}],
-                max_tokens=5
-            )
-            logger.info(f"OpenAI连接测试成功: {resp.choices[0].message.content}")
-            
-    except Exception as e:
-        logger.error(f"模型预热失败: {str(e)}")
-        raise
-
+@app.cli.command("warmup")
+def warmup_command():
+    """命令行预热模型"""
+    warmup_models()
+    print("✅ 模型预热完成")
 # ========== 健康检查接口 ==========
 @app.route("/health", methods=["GET"])
 def health_check():
