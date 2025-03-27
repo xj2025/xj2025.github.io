@@ -6,15 +6,11 @@ import numpy as np
 import faiss
 import json
 import os
-
+import os
+os.environ["TOKENIZERS_PARALLELISM"] = "false"  # 禁用并行化
 app = Flask(__name__)
-CORS(app, resources={
-    r"/api/*": {
-        "origins": ["https://xj2025.github.io", "http://localhost:*"],
-        "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type"]
-    }
-})
+
+CORS(app)  # 允许所有域名（生产环境应限制）
 # ========== 初始化配置 ==========
 class ChatConfig:
     def __init__(self):
