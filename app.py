@@ -14,10 +14,7 @@ import asyncio
 import platform
 import requests
 import traceback
-
-# Windows系统需要特殊设置事件循环策略
-if platform.system() == "Windows":
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+import logging
 
 # 强制设置系统默认编码为UTF-8
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
@@ -30,10 +27,24 @@ app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 
 # ========== 初始化日志配置 ==========
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.DEBUG,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('debug.log')
+    ]
 )
 logger = logging.getLogger(__name__)
+logger.info("✅ 脚本开始执行")
+@app.route('/api/check_init')
+def check_init():
+    """暴力检查全局变量状态"""
+    return jsonify({
+        "faiss_index_exists": faiss_index is not None,
+        "knowledge_base_exists": knowledge_base is not None,
+        "openai_client_exists": client is not None,
+        "current_time": datetime.now().isoformat()
+    })
 
 # ========== 百度ERNIE配置 ==========
 class ChatConfig:
