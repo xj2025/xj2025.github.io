@@ -1,6 +1,6 @@
 gunicorn==20.1.0
 requests==2.31.0
-
+pytest
 flask>=3.0.0           # 基础Web框架
 flask-cors>=4.0.0      # 跨域支持
 openai>=1.0.0          # 新版OpenAI SDK
