@@ -9,12 +9,8 @@ import logging
 from datetime import datetime, timedelta
 import sys
 import io
-import aiohttp
-import asyncio
-import platform
 import requests
 import traceback
-import logging
 
 # 强制设置系统默认编码为UTF-8
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
@@ -27,24 +23,10 @@ app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 
 # ========== 初始化日志配置 ==========
 logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s [%(levelname)s] %(message)s',
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler('debug.log')
-    ]
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
-logger.info("✅ 脚本开始执行")
-@app.route('/api/check_init')
-def check_init():
-    """暴力检查全局变量状态"""
-    return jsonify({
-        "faiss_index_exists": faiss_index is not None,
-        "knowledge_base_exists": knowledge_base is not None,
-        "openai_client_exists": client is not None,
-        "current_time": datetime.now().isoformat()
-    })
 
 # ========== 百度ERNIE配置 ==========
 class ChatConfig:
@@ -70,10 +52,10 @@ class ChatConfig:
         self.similarity_threshold = 0.7
         self.debug_mode = False  # 调试开关
 
-         # 对话管理
+        # 对话管理
         self.memory_window = 4  # 历史消息轮次
 
-         # 新增调试参数
+        # 新增调试参数
         self.min_similarity = 0.3  # 最低记录阈值
         self.max_similarity = 0.9  # 最高记录阈值 = 4
 
@@ -108,12 +90,19 @@ def initialize_components():
         # 3. 加载知识库（使用绝对路径）
         base_dir = os.path.dirname(os.path.abspath(__file__))
         knowledge_path = os.path.join(base_dir, '1.json')
+        vectors_path = os.path.join(base_dir, 'knowledge_vectors.npy')
+        
+        # 验证文件存在
+        if not os.path.exists(knowledge_path):
+            raise FileNotFoundError(f"知识库文件 {knowledge_path} 不存在")
+        if not os.path.exists(vectors_path):
+            raise FileNotFoundError(f"向量文件 {vectors_path} 不存在")
+            
         with open(knowledge_path, 'r', encoding='utf-8') as f:
             knowledge_base = json.load(f)
             logger.info(f"加载知识库，共{len(knowledge_base)}条数据")
         
         # 4. 加载并归一化向量
-        vectors_path = os.path.join(base_dir, 'knowledge_vectors.npy')
         vectors = np.load(vectors_path)
         faiss.normalize_L2(vectors)
         
@@ -121,34 +110,34 @@ def initialize_components():
         faiss_index = faiss.IndexFlatIP(vectors.shape[1])
         faiss_index.add(vectors)
         logger.info(f"FAISS索引构建完成，维度: {vectors.shape[1]}")
-        def check_vector_health(vectors):
-            """向量系统健康诊断"""
-            try:
-                # 1. 检查向量范数
-                norms = np.linalg.norm(vectors, axis=1)
-                logger.info(f"向量范数范围: {norms.min():.4f}-{norms.max():.4f}")
-                
-                # 2. 检查索引类型
-                assert faiss_index.metric_type == faiss.METRIC_INNER_PRODUCT, "必须使用内积索引"
-                
-                # 3. 抽样检查相似度
-                sample = vectors[:5] @ vectors[:5].T
-                np.fill_diagonal(sample, np.nan)
-                logger.info(f"样本相似度范围: {np.nanmin(sample):.2f}-{np.nanmax(sample):.2f}")
-                
-            except Exception as e:
-                logger.error(f"健康检查失败: {str(e)}")
-                raise
-                # 健康检查
+        
+        # 健康检查
         check_vector_health(vectors)
         
     except Exception as e:
         logger.error(f"初始化失败: {str(e)}\n{traceback.format_exc()}")
         raise
 
+def check_vector_health(vectors):
+    """向量系统健康诊断"""
+    try:
+        # 1. 检查向量范数
+        norms = np.linalg.norm(vectors, axis=1)
+        logger.info(f"向量范数范围: {norms.min():.4f}-{norms.max():.4f}")
+        
+        # 2. 检查索引类型
+        assert faiss_index.metric_type == faiss.METRIC_INNER_PRODUCT, "必须使用内积索引"
+        
+        # 3. 抽样检查相似度
+        sample = vectors[:5] @ vectors[:5].T
+        np.fill_diagonal(sample, np.nan)
+        logger.info(f"样本相似度范围: {np.nanmin(sample):.2f}-{np.nanmax(sample):.2f}")
+        
+    except Exception as e:
+        logger.error(f"健康检查失败: {str(e)}")
+        raise
 
-#相似度分布分析
-async def analyze_similarity_distribution():
+def analyze_similarity_distribution():
     """系统启动时自动分析相似度分布"""
     test_queries = [
         "常见问题", 
@@ -160,7 +149,7 @@ async def analyze_similarity_distribution():
     
     logger.info("开始相似度分布分析...")
     for query in test_queries:
-        embedding = await get_embeddings(query)
+        embedding = get_embeddings(query)
         distances, _ = faiss_index.search(embedding.reshape(1, -1), 50)  # 检查前50个结果
         similarities = 1 - distances[0]
         
@@ -172,28 +161,28 @@ async def analyze_similarity_distribution():
             f"高于当前阈值({config.similarity_threshold})的结果: "
             f"{sum(similarities > config.similarity_threshold)}个"
         )
-async def refresh_access_token():
-    """异步刷新百度Token"""
+
+def refresh_access_token():
+    """同步刷新百度Token"""
     try:
         auth_url = f"https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id={config.api_key}&client_secret={config.secret_key}"
-        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
-            async with session.get(auth_url) as resp:
-                if resp.status != 200:
-                    raise ValueError(f"HTTP错误: {resp.status}")
-                token_data = await resp.json()
-                config.access_token = token_data["access_token"]
-                config.token_expire = datetime.now() + timedelta(seconds=token_data["expires_in"] - 60)
-                logger.info("百度Token刷新成功")
+        resp = requests.get(auth_url, timeout=10)
+        if resp.status_code != 200:
+            raise ValueError(f"HTTP错误: {resp.status_code}")
+        token_data = resp.json()
+        config.access_token = token_data["access_token"]
+        config.token_expire = datetime.now() + timedelta(seconds=token_data["expires_in"] - 60)
+        logger.info("百度Token刷新成功")
     except Exception as e:
         logger.error(f"Token刷新失败: {str(e)}")
         config.access_token = None  # 强制下次重新初始化
 
-async def get_embeddings(text):
-    """使用百度ERNIE获取文本嵌入（异步安全版）"""
+def get_embeddings(text):
+    """使用百度ERNIE获取文本嵌入（同步版）"""
     try:
-        # Token检查（线程安全）
+        # Token检查
         if not config.access_token or (config.token_expire and datetime.now() > config.token_expire):
-            await refresh_access_token()
+            refresh_access_token()
             if not config.access_token:
                 raise ValueError("无法获取有效Token")
         
@@ -201,27 +190,25 @@ async def get_embeddings(text):
         url = f"{config.embed_api_url}?access_token={config.access_token}"
         payload = json.dumps({"input": [text], "user_id": "rag_system"}, ensure_ascii=False)
         
-        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=5)) as session:
-            async with session.post(url, headers={'Content-Type': 'application/json'}, data=payload) as resp:
-                if resp.status != 200:
-                    raise ValueError(f"HTTP错误: {resp.status}")
-                
-                data = await resp.json()
-                if "error_code" in data:
-                    raise ValueError(f"API错误 {data['error_code']}: {data.get('error_msg')}")
-                
-                embedding = np.array(data['data'][0]['embedding'])
-                return embedding / np.linalg.norm(embedding)  # 归一化
-                
+        resp = requests.post(url, headers={'Content-Type': 'application/json'}, data=payload, timeout=5)
+        if resp.status_code != 200:
+            raise ValueError(f"HTTP错误: {resp.status_code}")
+        
+        data = resp.json()
+        if "error_code" in data:
+            raise ValueError(f"API错误 {data['error_code']}: {data.get('error_msg')}")
+        
+        embedding = np.array(data['data'][0]['embedding'])
+        return embedding / np.linalg.norm(embedding)  # 归一化
+            
     except Exception as e:
         logger.error(f"获取embedding失败: {str(e)}")
         return np.zeros(384)  # 返回零向量保底
 
-
-# ========== 检索函数 ==========
-async def retrieve_documents(query):
+def retrieve_documents(query):
+    """同步检索文档"""
     try:
-        query_embedding = await get_embeddings(query)
+        query_embedding = get_embeddings(query)
         query_embedding = query_embedding.reshape(1, -1).astype('float32')
         faiss.normalize_L2(query_embedding)  # 查询向量也需归一化
 
@@ -244,30 +231,15 @@ async def retrieve_documents(query):
             "text": str(doc["text"]), 
             "score": 0.0
         } for doc in knowledge_base[:config.retrieve_top_k]]  # 保底返回
-     
-    except Exception as e:
-        logger.error(f"检索失败: {str(e)}")
-        return []
+
 # ========== 核心路由 ==========
 @app.route("/api/chat", methods=["POST"])
 def chat():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        data = request.get_json()
-        if not data or "userInput" not in data:
-            return jsonify({"error": "需要提供userInput参数"}), 400
-
-        return loop.run_until_complete(async_chat_handler(data))
-    except Exception as e:
-        logger.error(f"请求处理失败: {str(e)}\n{traceback.format_exc()}")
-        return jsonify({"error": str(e)}), 500
-    finally:
-        loop.close()
-
-
-async def async_chat_handler(data):
     start_time = datetime.now()
+    data = request.get_json()
+    if not data or "userInput" not in data:
+        return jsonify({"error": "需要提供userInput参数"}), 400
+
     user_input = data["userInput"].strip()
     messages = data.get("messages", [])
     
@@ -276,7 +248,7 @@ async def async_chat_handler(data):
         original_threshold = config.similarity_threshold
         
         # 首次检索
-        retrieved_docs = await retrieve_documents(user_input)
+        retrieved_docs = retrieve_documents(user_input)
         
         # 动态调整阈值（紧急修复）
         if len(retrieved_docs) == 0:
@@ -287,7 +259,7 @@ async def async_chat_handler(data):
                 new_threshold = max(0.3, config.similarity_threshold - 0.1*(attempt+1))
                 logger.warning(f"尝试降低阈值至: {new_threshold}")
                 config.similarity_threshold = new_threshold
-                retrieved_docs = await retrieve_documents(user_input)
+                retrieved_docs = retrieve_documents(user_input)
                 
                 if len(retrieved_docs) > 0:
                     logger.warning(f"在阈值 {new_threshold} 下检索到 {len(retrieved_docs)} 条结果")
@@ -350,15 +322,16 @@ async def async_chat_handler(data):
                 "retrieved_docs": []
             }
         })
-# ========== 调试路由 ========== （新增这部分）
+
+# ========== 调试路由 ==========
 @app.route("/api/debug_search", methods=["POST"])
-async def debug_search():
+def debug_search():
     """可视化调试检索过程"""
     data = request.get_json()
     query = data.get("query", "测试查询")
     
     # 1. 获取查询向量
-    query_embedding = await get_embeddings(query)
+    query_embedding = get_embeddings(query)
     
     # 2. 执行搜索
     distances, indices = faiss_index.search(
@@ -383,9 +356,10 @@ async def debug_search():
         "threshold": config.similarity_threshold,
         "results": sorted(results, key=lambda x: -x["similarity"])
     })    
+
 # ========== 测试路由 ==========
 @app.route("/api/test_baidu_embedding", methods=["GET"])
-async def test_baidu_embedding():
+def test_baidu_embedding():
     """测试百度embedding服务状态"""
     test_text = "这是一个测试文本"
     try:
@@ -394,7 +368,7 @@ async def test_baidu_embedding():
         if token_res.status_code != 200:
             return jsonify({"error": "Token获取失败", "detail": token_res.text}), 500
         
-        embedding = await get_embeddings(test_text)
+        embedding = get_embeddings(test_text)
         
         return jsonify({
             "status": "success",
@@ -422,15 +396,8 @@ def system_status():
     })
 
 if __name__ == "__main__":
-    # 同步初始化（绕过Render的异步限制）
-    print("🛠️ 开始强制同步初始化...")
-    initialize_components()  # 确保这是同步函数
-    
-    # 二次验证
-    assert faiss_index is not None, "FAISS索引初始化失败"
-    assert knowledge_base is not None, "知识库加载失败"
-    assert client is not None, "OpenAI客户端初始化失败"
-    print("✅ 所有组件初始化完成")
+    # 初始化组件
+    initialize_components()
     
     # 启动Flask
     app.run(host="0.0.0.0", port=10000)
