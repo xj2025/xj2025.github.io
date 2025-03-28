@@ -422,12 +422,15 @@ def system_status():
     })
 
 if __name__ == "__main__":
-    try:
-        
-        async def main():
-            await initialize_components()
-            app.run(host="0.0.0.0", port=10000)
+    # 同步初始化（绕过Render的异步限制）
+    print("🛠️ 开始强制同步初始化...")
+    initialize_components()  # 确保这是同步函数
     
-        asyncio.run(main())
-    except Exception as e:
-        logger.critical(f"服务启动失败: {str(e)}\n{traceback.format_exc()}")
+    # 二次验证
+    assert faiss_index is not None, "FAISS索引初始化失败"
+    assert knowledge_base is not None, "知识库加载失败"
+    assert client is not None, "OpenAI客户端初始化失败"
+    print("✅ 所有组件初始化完成")
+    
+    # 启动Flask
+    app.run(host="0.0.0.0", port=10000)
