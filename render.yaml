@@ -27,7 +27,7 @@ services:
       
     # 3. 正式启动
     startCommand: |
-      gunicorn app1:app \
+      gunicorn app:app \
         --workers ${WORKERS:-1} \
         --timeout ${TIMEOUT:-120} \
         --bind 0.0.0.0:10000
