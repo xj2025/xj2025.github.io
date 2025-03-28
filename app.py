@@ -412,7 +412,11 @@ def system_status():
 
 if __name__ == "__main__":
     try:
-        initialize_components()
-        app.run(host="0.0.0.0", port=10000, debug=False)
+        
+        async def main():
+            await initialize_components()
+            app.run(host="0.0.0.0", port=10000)
+    
+        asyncio.run(main())
     except Exception as e:
         logger.critical(f"服务启动失败: {str(e)}\n{traceback.format_exc()}")
