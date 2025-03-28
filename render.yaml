@@ -60,8 +60,4 @@ services:
         minInstances: 1
         maxInstances: 3
 
-    # 高级配置
-    disk:
-      name: data
-      mountPath: /data
-      sizeGB: 1  # 仅用于缓存token等小文件
+    
