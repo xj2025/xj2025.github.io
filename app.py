@@ -21,7 +21,14 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"  # 在文件最开头添加
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 app = Flask(__name__)
-CORS(app)
+# 精确配置CORS（必须放在所有路由定义前）
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["https://xj2025.github.io"],
+        "methods": ["POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"]
+    }
+})
 app.config['JSON_AS_ASCII'] = False  # 允许非ASCII字符
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 # ========== 初始化日志配置 ==========
@@ -36,75 +43,90 @@ class ChatConfig:
         self.embedding_model = "BAAI/bge-small-zh-v1.5"
         self.retrieve_top_k = 3
         self.memory_window = 6
-        self.model_cache_dir = "/opt/render/.cache"  # 修改为Render持久化目录
+        self.model_cache_dir = "./model"
 
 config = ChatConfig()
 
-# ========== 全局组件改为惰性加载 ==========
-client = None
-embedding_model = None
-knowledge_base = None
-faiss_index = None
-
+# ========== 初始化组件 ==========
 def initialize_components():
-    """惰性初始化组件（首次请求时调用）"""
-    global client, embedding_model, knowledge_base, faiss_index
+    """初始化所有关键组件并记录状态"""
+    components = {}
     
-    if None in [client, embedding_model, knowledge_base, faiss_index]:
-        try:
-            # 1. OpenAI客户端
-            client = OpenAI(api_key=config.api_key, base_url=config.base_url)
+    try:
+        # 1. 初始化OpenAI客户端
+        components['openai_client'] = OpenAI(api_key=config.api_key, base_url=config.base_url)
+        logger.info("✅ OpenAI客户端初始化成功")
+        
+        # 2. 加载嵌入模型
+        components['embedding_model'] = SentenceTransformer(
+            config.embedding_model,
+            device='cpu',
+            cache_folder=config.model_cache_dir,
+            local_files_only=True
+        )
+        logger.info("✅ 嵌入模型加载成功")
+        
+        # 3. 加载知识库
+        if not os.path.exists('1.json'):
+            raise FileNotFoundError("知识库文件 1.json 不存在")
             
-            # 2. 嵌入模型（从预热缓存加载）
-            embedding_model = SentenceTransformer(
-                config.embedding_model,
-                device='cpu',
-                cache_folder=config.model_cache_dir,
-                local_files_only=True
-            )
-            
-            # 3. 知识库
-            with open('1.json', 'r', encoding='utf-8') as f:
-                knowledge_base = json.load(f)
-                
-            # 4. FAISS索引
-            vectors = np.array([embedding_model.encode(doc["text"]) for doc in knowledge_base])
-            faiss_index = faiss.IndexFlatL2(vectors.shape[1])
-            faiss_index.add(vectors)
-            
-            logger.info("✅ 所有组件初始化完成")
-        except Exception as e:
-            logger.error(f"组件初始化失败: {str(e)}")
-            raise
+        with open('1.json', 'r', encoding='utf-8') as f:
+            components['knowledge_base'] = json.load(f)
+        logger.info(f"✅ 知识库加载成功，共 {len(components['knowledge_base'])} 条数据")
+        
+        # 4. 构建FAISS索引
+        vectors = np.array([components['embedding_model'].encode(doc["text"]) for doc in components['knowledge_base']])
+        components['faiss_index'] = faiss.IndexFlatL2(vectors.shape[1])
+        components['faiss_index'].add(vectors)
+        logger.info("✅ FAISS索引构建成功")
+        
+        return components
+    
+    except Exception as e:
+        logger.error(f"❌ 组件初始化失败: {str(e)}")
+        raise
 
-# ========== 修改健康检查接口 ==========
+try:
+    components = initialize_components()
+    client = components['openai_client']
+    embedding_model = components['embedding_model']
+    knowledge_base = components['knowledge_base']
+    faiss_index = components['faiss_index']
+except Exception as e:
+    logger.critical("⚠️ 服务启动失败，关键组件未初始化！")
+    # 设置为None以便后续检查
+    client = embedding_model = knowledge_base = faiss_index = None
+# ========== 模型预热 ==========
+@app.cli.command("warmup")
+def warmup_command():
+    """命令行预热模型"""
+    warmup_models()
+    print("✅ 模型预热完成")
+# ========== 健康检查接口 ==========
 @app.route("/health", methods=["GET"])
 def health_check():
-    try:
-        initialize_components()  # 尝试初始化（不阻塞）
-        status = {
-            "status": "ready",
-            "components_ready": all([client, embedding_model, knowledge_base, faiss_index])
-        }
-        return jsonify(status)
-    except:
-        return jsonify({"status": "initializing"}), 503
+    status = {
+        "api_ready": client is not None,
+        "model_ready": embedding_model is not None,
+        "knowledge_base_ready": knowledge_base is not None,
+        "faiss_ready": faiss_index is not None,
+        "timestamp": datetime.now().isoformat()
+    }
+    return jsonify(status)
 
-# ========== 修改检索函数 ==========
+# ========== 核心功能 ==========
 def retrieve_documents(query):
-    """添加自动初始化"""
+    """增强的检索函数，包含错误处理"""
     try:
-        initialize_components()  # 确保模型已加载
         start_time = datetime.now()
         query_vec = embedding_model.encode([query])
         _, indices = faiss_index.search(query_vec, config.retrieve_top_k)
         results = [knowledge_base[idx]["text"] for idx in indices[0]]
-        logger.info(f"检索完成: 查询='{query}', 耗时={(datetime.now()-start_time).total_seconds():.2f}s")
+        logger.info(f"检索完成: 查询='{query}', 耗时={(datetime.now()-start_time).total_seconds():.2f}s, 结果数={len(results)}")
         return results
     except Exception as e:
         logger.error(f"检索失败: {str(e)}")
         return []
-
 
 def build_rag_prompt(query, docs):
     """构建提示词，添加空值检查"""
@@ -236,9 +258,9 @@ def chat():
         }), 500
 
 if __name__ == "__main__":
-    # 启动时仅检查必要文件
-    if not os.path.exists('1.json'):
-        logger.critical("❌ 知识库文件不存在")
+    # 启动前再次检查组件
+    if None in [client, embedding_model, knowledge_base, faiss_index]:
+        logger.critical("⚠️ 有组件未初始化，服务可能无法正常工作！")
     
-    # 不主动初始化模型，等待首次请求或postdeploy预热
+    # 运行服务
     app.run(host="0.0.0.0", port=10000, debug=False)
