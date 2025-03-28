@@ -1,61 +1,45 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>马栏村红色文化AI助手</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    
+ 
+ 
+
+
+
+    <title>2025/3/26测试 重开remake</title>
+    <style>
+        #dateDisplay {
+            font-size: 24px;
+            font-weight: bold;
+            color: beige;
+        }
+    </style>
 </head>
 
-<body>
-    <div class="container">
-        <header>
-            <h1>马栏村红色文化AI助手</h1>
-            <p>为您提供马栏村历史文化、旅游信息的专业解答</p>
-        </header>
+<body id="backgroundContainer">
+    
 
-        <div class="chat-container">
-            <div class="sidebar">
-                <div class="sidebar-title">历史对话</div>
-                <div id="history-list">
-                    <!-- 历史对话项将在这里动态生成 -->
-                </div>
-            </div>
 
-            <div class="chat-area">
-                <div class="messages" id="messages">
-                    <div class="message message-ai">
-                        <div class="avatar">AI</div>
-                        <div class="bubble ai-bubble">
-                            您好！我是马栏村红色文化AI助手，很高兴为您服务。请问您想了解马栏村的哪些历史文化或旅游信息？
-                        </div>
-                    </div>
-                </div>
 
-                <div class="input-area">
-                    <div class="input-container">
-                        <textarea id="user-input" placeholder="请输入您的问题..." rows="1"></textarea>
-                        <button class="send-btn" id="send-btn">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
 
-            <div class="info-panel">
-                <div class="sidebar-title">马栏村简介</div>
-                <div class="info-content">
-                    <p>马栏村位于北京市门头沟区斋堂镇，是一处具有光荣革命传统的红色旅游胜地。</p>
-                    <p>抗日战争时期，马栏村是平西抗日根据地的重要组成部分，八路军冀热察挺进军司令部曾驻扎于此。</p>
-                    <p>村内现存众多革命遗址，包括司令部旧址、医院旧址等，是爱国主义教育的重要基地。</p>
-                </div>
-            </div>
+    <main>
+        <h1>remake测试</h1>
+        <div id="output"></div>
+        <div id="input-container">
+            <input type="text" id="input-box" placeholder="（请随意输出）">
+            <button id="send-button">发送</button>
         </div>
-    </div>
+    </main>
 
-    <script src="script.js"></script>
+
+
+    
+    
+      <script src="script.js"></script>
 </body>
 
 </html>
