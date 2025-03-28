@@ -1,7 +1,7 @@
-const API_URL = "http://localhost:10000/api/chat"; // 改为您的实际后端地址
+const API_URL = "https://xj2025-github-io.onrender.com/api/chat";
 const messagesContainer = document.getElementById("messages");
-const userInput = document.getElementById("user-input");
-const sendButton = document.getElementById("send-btn");
+const inputBox = document.getElementById("user-input");  // 修正ID
+const sendButton = document.getElementById("send-btn");  // 修正ID
 
 // 初始化对话上下文
 function initMessages() {
@@ -13,38 +13,6 @@ function initMessages() {
 }
 
 let messages = JSON.parse(sessionStorage.getItem("chatMessages")) || initMessages();
-
-// 显示加载状态
-function showTypingIndicator() {
-    const typingDiv = document.createElement("div");
-    typingDiv.className = "message message-ai";
-    typingDiv.id = "typing-indicator";
-    
-    const avatar = document.createElement("div");
-    avatar.className = "avatar";
-    avatar.textContent = "AI";
-    
-    const bubble = document.createElement("div");
-    bubble.className = "bubble ai-bubble typing-indicator";
-    
-    for (let i = 0; i < 3; i++) {
-        const dot = document.createElement("div");
-        dot.className = "typing-dot";
-        bubble.appendChild(dot);
-    }
-    
-    typingDiv.append(avatar, bubble);
-    messagesContainer.appendChild(typingDiv);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-}
-
-// 移除加载状态
-function hideTypingIndicator() {
-    const indicator = document.getElementById("typing-indicator");
-    if (indicator) {
-        indicator.remove();
-    }
-}
 
 // 统一的消息添加函数
 function addMessage(sender, content, isError = false) {
@@ -65,70 +33,55 @@ function addMessage(sender, content, isError = false) {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-// 显示错误信息
-function showError(message) {
-    addMessage("AI", message, true);
-}
+
+
 
 async function sendRequest(userInput) {
-    showTypingIndicator();
-    
     try {
         const response = await fetch(API_URL, {
             method: "POST",
-            headers: { 
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            },
-            body: JSON.stringify({ 
-                userInput, 
-                messages: messages.filter(msg => msg.role !== "system") 
-            })
+            mode: "cors",  // 显式声明CORS模式
+            headers: { "Content-Type": "application/json;charset=utf-8" },
+            body: JSON.stringify({ userInput, messages })
         });
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.error || "请求失败");
+            throw new Error(error.detail || "请求失败");
         }
-        
         return await response.json();
     } catch (error) {
         showError(`请求失败: ${error.message}`);
         return null;
-    } finally {
-        hideTypingIndicator();
     }
 }
 
 // 发送消息
-async function handleSend() {
-    const inputText = userInput.value.trim();
-    if (!inputText) return;
+sendButton.addEventListener("click", async () => {
+    const userInput = inputBox.value.trim();
+    if (!userInput) return;
 
-    addMessage("user", inputText);
-    userInput.value = "";
+    addMessage("user", userInput);
+    inputBox.value = "";
 
-    const result = await sendRequest(inputText);
+    const result = await sendRequest(userInput);
     if (result) {
         addMessage("AI", result.reply);
 
         if (result.relatedKnowledge?.length > 0) {
-            addMessage("AI", "参考知识：\n" + result.relatedKnowledge.map(doc => doc.text).join("\n\n"));
+            addMessage("AI", "参考知识：\n" + result.relatedKnowledge.join("\n"));
         }
 
         messages = result.updatedMessages;
         sessionStorage.setItem("chatMessages", JSON.stringify(messages));
     }
-}
-
-// 事件监听
-sendButton.addEventListener("click", handleSend);
+});
 
 // 按Enter发送（避免Shift+Enter冲突）
-userInput.addEventListener("keydown", (e) => {
+inputBox.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
-        handleSend();
+        sendButton.click();
     }
 });
 
