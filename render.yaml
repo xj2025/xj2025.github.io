@@ -14,7 +14,11 @@ services:
       pip install -r requirements.txt
       echo "=== 文件列表 ===" && ls -l && \
       echo "=== 安装依赖 ===" && pip install -r requirements.txt
-     
+      echo "=== 文件检查 ===" && \
+      ls -l && \
+      [ -f 1.json ] || echo "❌ 1.json不存在" && \
+      [ -f knowledge_vectors.npy ] || echo "❌ knowledge_vectors.npy不存在" && \
+      pip install -r requirements.txt
      
    
       
