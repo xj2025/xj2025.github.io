@@ -12,6 +12,12 @@ services:
       python -c "from app import initialize_components; initialize_components()"
       ls -l *.json *.npy && \
       pip install -r requirements.txt
+      echo "=== 文件列表 ===" && ls -l && \
+      echo "=== 安装依赖 ===" && pip install -r requirements.txt
+     
+     
+   
+      
 
     # 启动前检查
     healthCheckPath: /api/health
@@ -25,7 +31,8 @@ services:
         --timeout ${TIMEOUT:-60} \
         --bind 0.0.0.0:10000 \
         --worker-class aiohttp.GunicornWebWorker
-
+      python -c "import logging; logging.basicConfig(level=logging.INFO); from app import initialize_components; initialize_components()" && \
+      python app.py
     # 环境变量（需在Render Dashboard设置敏感值）
     envVars:
       
