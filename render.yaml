@@ -3,7 +3,7 @@ services:
     name: xj2025-github-io 
     runtime: python
     env: python
-    region: singapore  # 根据用户分布选择
+    
 
     # 构建配置
     buildCommand: |
