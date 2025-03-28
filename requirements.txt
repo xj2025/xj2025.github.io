@@ -1,10 +1,9 @@
+pytest
+aiohttp>=3.9.0         # 异步HTTP请求
+Flask==2.3.2
 gunicorn==20.1.0
 requests==2.31.0
-pytest
-flask>=3.0.0           # 基础Web框架
-flask-cors>=4.0.0      # 跨域支持
-openai>=1.0.0          # 新版OpenAI SDK
-numpy>=1.24.0          # 向量计算
-faiss-cpu>=1.7.4       # 或 faiss-gpu（若用GPU）
-aiohttp>=3.9.0         # 异步HTTP请求
-python-dotenv>=1.0.0   # 环境变量管理（推荐新增）
+flask-cors==4.0.0
+openai
+faiss-cpu
+numpy
