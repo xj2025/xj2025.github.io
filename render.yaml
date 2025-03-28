@@ -1,63 +1,10 @@
 services:
   - type: web
-    name: xj2025-github-io 
-    runtime: python
-    env: python
-    
-
-    # 构建配置
     buildCommand: |
-      pip install --upgrade pip && \
-      pip install -r requirements.txt --no-cache-dir
+      pip install -r requirements.txt
       python -c "from app import initialize_components; initialize_components()"
-      ls -l *.json *.npy && \
-      pip install -r requirements.txt
-      echo "=== 文件列表 ===" && ls -l && \
-      echo "=== 安装依赖 ===" && pip install -r requirements.txt
-      echo "=== 文件检查 ===" && \
-      ls -l && \
-      [ -f 1.json ] || echo "❌ 1.json不存在" && \
-      [ -f knowledge_vectors.npy ] || echo "❌ knowledge_vectors.npy不存在" && \
-      pip install -r requirements.txt
-     
-   
-      
-
-    # 启动前检查
-    healthCheckPath: /api/health
-    healthCheckTimeout: 30
-
-    # 生产环境启动命令
     startCommand: |
-      gunicorn app:app \
-        --workers ${WORKERS:-2} \
-        --threads ${THREADS:-4} \
-        --timeout ${TIMEOUT:-60} \
-        --bind 0.0.0.0:10000 \
-        --worker-class aiohttp.GunicornWebWorker
-      python -c "import logging; logging.basicConfig(level=logging.INFO); from app import initialize_components; initialize_components()" && \
       python app.py
-    # 环境变量（需在Render Dashboard设置敏感值）
     envVars:
-      
-
-      # 性能调优
-      - key: OMP_NUM_THREADS
+      - key: PYTHONUNBUFFERED
         value: "1"
-      - key: WORKERS
-        value: "2"
-      - key: THREADS  
-        value: "4"
-      - key: TIMEOUT
-        value: "60"
-
-    # 资源分配（纯API调用可降低配置）
-    resources:
-      cpu: 1
-      memory: 2GB
-      autoScaling:
-        enabled: true
-        minInstances: 1
-        maxInstances: 3
-
-    
