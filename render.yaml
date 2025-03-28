@@ -1,53 +1,24 @@
+# render.yaml
 services:
   - type: web
-    name: xj2025-github-io
+    name: xj2025-github-io  # 服务名称（自定义）
     runtime: python
-    
-    # 1. 构建阶段：仅安装依赖（不加载模型）
     buildCommand: |
-      pip install -r requirements.txt --no-cache-dir
-      mkdir -p /opt/render/.cache  # 创建持久化缓存目录
-      chmod 777 /opt/render/.cache  # 确保写入权限
-
-    # 2. 关键！部署后预热（无时间限制）
-    postdeployCommand: |
-      python -c "
-      from sentence_transformers import SentenceTransformer
-      import os
-      print('开始预加载模型...')
-      model = SentenceTransformer(
-        'BAAI/bge-small-zh-v1.5',
-        cache_folder='/opt/render/.cache',
-        local_files_only=True
-      )
-      # 测试编码功能
-      test_vec = model.encode(['预热测试'])
-      print(f'模型预热成功，向量维度：{len(test_vec[0])}')
-      "
-      
-    # 3. 正式启动
+      pip install -r requirements.txt --no-cache-dir  # 仅安装依赖
+    preStartCommand: |
+      flask warmup || echo "预热失败但继续启动"
     startCommand: |
       gunicorn app:app \
         --workers ${WORKERS:-1} \
         --timeout ${TIMEOUT:-120} \
         --bind 0.0.0.0:10000
-        
-    # 4. 环境变量优化
     envVars:
       - key: OMP_NUM_THREADS
-        value: "1"  # 禁用OpenMP多线程
+        value: "1"  # 强制单线程，节省内存
       - key: WORKERS
-        value: 1    # 单Worker确保模型单例
+        value: 1
       - key: TIMEOUT
         value: 120
-      - key: MODEL_CACHE_DIR  # 与app1.py配置保持一致
-        value: "/opt/render/.cache"
-        
-    # 5. 资源分配（必须≥1.5GB）
     resources:
-      cpu: 1
+      cpu: 1  # 免费层配置
       memory: 2GB
-
-    # 6. 健康检查配置
-    healthCheckPath: /health
-    healthCheckTimeout: 120
