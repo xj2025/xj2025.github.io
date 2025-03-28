@@ -1,24 +1,53 @@
-# render.yaml
 services:
   - type: web
-    name: xj2025-github-io  # 服务名称（自定义）
+    name: xj2025-github-io 
     runtime: python
+    env: python
+    region: singapore  # 根据用户分布选择
+
+    # 构建配置
     buildCommand: |
-      pip install -r requirements.txt --no-cache-dir  # 仅安装依赖
-    preStartCommand: |
-      flask warmup || echo "预热失败但继续启动"
+      pip install --upgrade pip && \
+      pip install -r requirements.txt --no-cache-dir
+
+    # 启动前检查
+    healthCheckPath: /api/health
+    healthCheckTimeout: 30
+
+    # 生产环境启动命令
     startCommand: |
       gunicorn app:app \
-        --workers ${WORKERS:-1} \
-        --timeout ${TIMEOUT:-120} \
-        --bind 0.0.0.0:10000
+        --workers ${WORKERS:-2} \
+        --threads ${THREADS:-4} \
+        --timeout ${TIMEOUT:-60} \
+        --bind 0.0.0.0:10000 \
+        --worker-class aiohttp.GunicornWebWorker
+
+    # 环境变量（需在Render Dashboard设置敏感值）
     envVars:
+      
+
+      # 性能调优
       - key: OMP_NUM_THREADS
-        value: "1"  # 强制单线程，节省内存
+        value: "1"
       - key: WORKERS
-        value: 1
+        value: "2"
+      - key: THREADS  
+        value: "4"
       - key: TIMEOUT
-        value: 120
+        value: "60"
+
+    # 资源分配（纯API调用可降低配置）
     resources:
-      cpu: 1  # 免费层配置
+      cpu: 1
       memory: 2GB
+      autoScaling:
+        enabled: true
+        minInstances: 1
+        maxInstances: 3
+
+    # 高级配置
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1  # 仅用于缓存token等小文件
