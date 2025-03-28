@@ -284,3 +284,53 @@ textarea:focus {
         max-width: 85%;
     }
 }
+
+
+/* 添加在现有CSS中 */
+.typing-indicator {
+    display: flex;
+    padding: 10px 15px;
+    align-items: center;
+}
+
+.typing-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #999;
+    border-radius: 50%;
+    margin: 0 2px;
+    animation: typingAnimation 1.4s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.typing-dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typingAnimation {
+    0%, 60%, 100% {
+        transform: translateY(0);
+    }
+    30% {
+        transform: translateY(-5px);
+    }
+}
+
+/* 确保按钮可点击 */
+.send-btn {
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+/* 禁用状态 */
+.send-btn:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
