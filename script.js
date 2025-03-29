@@ -1,4 +1,4 @@
-const API_URL = "https://xj2025-flask.fly.dev/api/chat";
+const API_URL = "https://your-app-name-white-cherry-3257.fly.dev/api/chat";
 const messagesContainer = document.getElementById("messages");
 const inputBox = document.getElementById("user-input");  // 修正ID
 const sendButton = document.getElementById("send-btn");  // 修正ID
