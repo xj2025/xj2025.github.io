@@ -1,31 +1,19 @@
+
+
 const API_URL = "https://your-app-name-white-cherry-3257.fly.dev/api/chat";
 
-// 1. 封装请求函数（无需手动触发OPTIONS，浏览器会自动处理）
-async function sendRequest(data) {
-    try {
-        const response = await fetch(API_URL, {
-            method: "POST",
-            mode: "cors",
-            credentials: "include", // 必须与后端supports_credentials=True配对
-            headers: {
-                "Content-Type": "application/json",
-                // 可选：添加请求指纹
-                "X-Request-ID": Math.random().toString(36).slice(2)
-            },
-            body: JSON.stringify(data)
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return await response.json();
-    } catch (error) {
-        console.error("Request failed:", error);
-        // 这里调用您的错误处理函数（确保已定义）
-        if (typeof showError === 'function') showError(error);
-        throw error;
-    }
-}
+fetch(API_URL, {
+  method: "POST",
+  mode: "cors", // 明确启用CORS模式
+  credentials: "include", // 若后端设置supports_credentials=True则必须
+  headers: {
+    "Content-Type": "application/json", // 必须与后端allow_headers匹配
+    "X-Requested-With": "XMLHttpRequest" // 可选安全头
+  },
+  body: JSON.stringify({message: "test"})
+})
+.then(response => response.json())
+.catch(error => console.error("Error:", error));
 
 const messagesContainer = document.getElementById("messages");
 const inputBox = document.getElementById("user-input");  // 修正ID
