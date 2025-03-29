@@ -1,7 +1,7 @@
 app = "xj2025-flask"  # 🔴 改成唯一的名字（如你的 GitHub 用户名 + 项目名）
 
 [build]
-  builder = "docker"  # 强制用 Docker 方式
+  builder = "docker"  # 强制使用 Dockerfile，禁用 Buildpacks
 
 [http_service]
   internal_port = 8000  # 必须和 Dockerfile 的 EXPOSE 一致
