@@ -5,5 +5,5 @@ app = "xj2025-flask-329"  # 🔴 改成唯一的名字（如你的 GitHub 用户
   dockerfile = "Dockerfile"  # 显式指定路径
 
 [http_service]
-  internal_port = 8000  # 必须和 Dockerfile 的 EXPOSE 一致
+  internal_port = 8080  # 必须和 Dockerfile 的 EXPOSE 一致
   force_https = true    # 自动启用 HTTPS
