@@ -1,8 +1,7 @@
 
 
 
-FROM python:3.10-slim  # 基础镜像（不要用 docker:latest）
-
+FROM python:3.10-slim  
 WORKDIR /app
 COPY . .
 RUN pip install -r requirements.txt
